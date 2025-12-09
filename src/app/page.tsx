@@ -46,13 +46,14 @@ export default function Home() {
     }
   };
 
-  const formatTime = (timeStr: string, timezone: string) => {
+  const formatTime = (timeStr: string) => {
     try {
+      // The API returns local time but tagged as UTC (e.g. +00:00).
+      // We parse it as UTC and display it as UTC to preserve the wall-clock time.
       return new Date(timeStr).toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
-        timeZone: timezone,
-        timeZoneName: 'short',
+        timeZone: 'UTC',
       });
     } catch (e) {
       return timeStr;
@@ -62,7 +63,10 @@ export default function Home() {
   const formatDate = (timeStr: string) => {
     try {
       return new Date(timeStr).toLocaleDateString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric'
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC'
       });
     } catch (e) {
       return '';
@@ -109,7 +113,7 @@ export default function Home() {
               <div className="location departure">
                 <span className="city">{flight.departure.city}</span>
                 <span className="airport-code">{flight.departure.airport}</span>
-                <div className="time">{formatTime(flight.departure.time, flight.departure.timezone)}</div>
+                <div className="time">{formatTime(flight.departure.time)}</div>
                 <div className="duration-text">{formatDate(flight.departure.time)}</div>
               </div>
 
@@ -121,7 +125,7 @@ export default function Home() {
               <div className="location arrival">
                 <span className="city">{flight.arrival.city}</span>
                 <span className="airport-code">{flight.arrival.airport}</span>
-                <div className="time">{formatTime(flight.arrival.time, flight.arrival.timezone)}</div>
+                <div className="time">{formatTime(flight.arrival.time)}</div>
                 <div className="duration-text">{formatDate(flight.arrival.time)}</div>
               </div>
             </div>
