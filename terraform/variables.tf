@@ -21,3 +21,10 @@ variable "image_image" {
   type        = string
   default     = "us-central1-docker.pkg.dev/flight-tracker-rcsg-01/flight-repo/flight-tracker"
 }
+
+variable "environment" {
+  description = "The deployment environment (dev or prod)"
+  type        = string
+  default     = "dev"
+}
+
