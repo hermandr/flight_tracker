@@ -1,0 +1,116 @@
+name: Flight Tracker CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'terraform/**'
+      - '.github/workflows/**' 
+  workflow_dispatch:
+    inputs:
+      force_recreate:
+        description: 'Force recreate Cloud Run service?'
+        required: true
+        default: true
+        type: boolean
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  PROJECT_ID: flight-tracker-rcsg-01
+  REGION: us-central1
+  SERVICE_NAME: flight-tracker
+  REPO_NAME: flight-repo
+
+jobs:
+  build-and-push:
+    name: Build and Push
+    runs-on: ubuntu-latest
+    environment: DEV
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    outputs:
+      image_uri: ${{ steps.build-image.outputs.image_uri }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker Auth
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build and Push Container
+        id: build-image
+        run: |
+          IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+          docker build -t $IMAGE_URI .
+          docker push $IMAGE_URI
+          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy to Cloud Run
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: DEV
+    defaults:
+      run:
+        working-directory: ./terraform
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy Service (Force Recreate)
+        if: ${{ github.event_name == 'push' || inputs.force_recreate == true }}
+        run: |
+          echo "Force destroying Cloud Run service to fix sticky IAM issues..."
+          # We purposefully ignore errors here in case the service doesn't exist yet
+          terraform destroy -target=google_cloud_run_service.default -var="project_id=${{ env.PROJECT_ID }}" -auto-approve || true
+
+      - name: Terraform Apply
+        run: |
+          TARGET_ENV="${{ inputs.environment || 'dev' }}"
+          echo "Deploying to environment: $TARGET_ENV"
+          
+          terraform apply \
+            -var="project_id=${{ env.PROJECT_ID }}" \
+            -var="image_image=${{ needs.build-and-push.outputs.image_uri }}" \
+            -var="environment=$TARGET_ENV" \
+            -auto-approve

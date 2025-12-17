@@ -5,6 +5,10 @@ terraform {
       version = ">= 4.0"
     }
   }
+  backend "gcs" {
+    bucket  = "flight-tracker-tf-state"
+    prefix  = "terraform/state"
+  }
 }
 
 provider "google" {
