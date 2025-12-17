@@ -1,9 +1,15 @@
+resource "google_service_account" "flight_tracker_sa" {
+  account_id   = "flight-tracker-sa"
+  display_name = "Flight Tracker Service Account"
+}
+
 resource "google_cloud_run_service" "default" {
   name     = var.service_name
   location = var.region
 
   template {
     spec {
+      service_account_name = google_service_account.flight_tracker_sa.email
       containers {
         image = var.image_image
         ports {
