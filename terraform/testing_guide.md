@@ -2,6 +2,16 @@
 
 When the service is in the **Dev** environment, public access is restricted (IAM: "Require authentication"). You can still access it using your authenticated credentials.
 
+### 1. Deploying to Dev
+```bash
+./deploy.sh dev [optional_image_uri]
+```
+This command will:
+1. Refresh your access token.
+2. **Force Destroy** the existing `flight-tracker` Cloud Run service (to fix sticky IAM).
+3. Re-create the service using `terraform apply`.
+4. Run a verification loop to ensure the service returns HTTP 403 (Private).
+
 ## Option 1: Browser Access (Recommended)
 You can use the `gcloud run services proxy` command to create a secure tunnel. This allows you to view the authenticated app in your local browser.
 

@@ -16,7 +16,7 @@ variable "service_name" {
   default     = "flight-tracker"
 }
 
-variable "image_image" {
+variable "image_uri" {
   description = "The Docker image URL to deploy"
   type        = string
   default     = "us-central1-docker.pkg.dev/flight-tracker-rcsg-01/flight-repo/flight-tracker"

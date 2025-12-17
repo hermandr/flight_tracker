@@ -111,6 +111,6 @@ jobs:
           
           terraform apply \
             -var="project_id=${{ env.PROJECT_ID }}" \
-            -var="image_image=${{ needs.build-and-push.outputs.image_uri }}" \
+            -var="image_uri=${{ needs.build-and-push.outputs.image_uri }}" \
             -var="environment=$TARGET_ENV" \
             -auto-approve

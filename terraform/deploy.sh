@@ -3,6 +3,7 @@ set -e
 
 # Default to dev if no argument provided
 ENV=${1:-dev}
+IMAGE_URI=$2
 
 # Validate environment
 if [[ "$ENV" != "dev" && "$ENV" != "prod" ]]; then
@@ -29,7 +30,12 @@ sleep 30
 
 # 3. Apply New Configuration
 echo "[3/3] Applies new configuration..."
-terraform apply -var="environment=$ENV" -auto-approve
+if [ -n "$IMAGE_URI" ]; then
+    echo "Using custom image: $IMAGE_URI"
+    terraform apply -var="environment=$ENV" -var="image_uri=$IMAGE_URI" -auto-approve
+else
+    terraform apply -var="environment=$ENV" -auto-approve
+fi
 
 # 4. Verification
 echo "[4/4] Verifying Access..."

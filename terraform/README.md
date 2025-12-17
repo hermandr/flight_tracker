@@ -17,7 +17,7 @@ The following variables can be configured in `variables.tf` or via `-var` flags:
 | `project_id` | GCP Project ID | `flight-tracker-rcsg-01` |
 | `region` | GCP Region | `us-central1` |
 | `service_name` | Cloud Run Service Name | `flight-tracker` |
-| `image_image` | Docker Image URL | `us-central1-docker.pkg.dev/flight-tracker-rcsg-01/flight-repo/flight-tracker` |
+| `image_uri` | Docker Image URL | `us-central1-docker.pkg.dev/flight-tracker-rcsg-01/flight-repo/flight-tracker` |
 
 ## Usage
 

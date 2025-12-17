@@ -11,7 +11,7 @@ resource "google_cloud_run_service" "default" {
     spec {
       service_account_name = google_service_account.flight_tracker_sa.email
       containers {
-        image = var.image_image
+        image = var.image_uri
         ports {
           container_port = 3000
         }
