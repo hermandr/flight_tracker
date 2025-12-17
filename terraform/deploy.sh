@@ -37,26 +37,39 @@ SERVICE_URL=$(terraform output -raw service_url)
 echo "Service URL: $SERVICE_URL"
 
 # Wait a moment for propagation if needed, though usually Cloud Run is fast
-echo "Sleeping 20s to ensure IAM settings propagate..."
-sleep 20
+# Polling loop to check for propagation
+MAX_RETRIES=18 # 18 * 5s = 90s
+COUNTER=0
 
-HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" "$SERVICE_URL")
-echo "HTTP Status: $HTTP_CODE"
+if [ "$ENV" == "prod" ]; then
+    EXPECTED_CODE="200"
+else
+    EXPECTED_CODE="403"
+fi
+
+echo "Waiting for service to return HTTP $EXPECTED_CODE..."
+
+while [ $COUNTER -lt $MAX_RETRIES ]; do
+    HTTP_CODE=$(curl -o /dev/null -s -w "%{http_code}" "$SERVICE_URL")
+    
+    if [ "$HTTP_CODE" == "$EXPECTED_CODE" ]; then
+        echo "✅ SUCCESS: Service returned $HTTP_CODE (Expected)"
+        if [ "$EXPECTED_CODE" == "403" ]; then
+             echo "Service is correctly PRIVATE."
+        else
+             echo "Service is correctly PUBLIC."
+        fi
+        exit 0
+    fi
+
+    echo "Current Status: $HTTP_CODE. Retrying in 5s... ($((COUNTER+1))/$MAX_RETRIES)"
+    sleep 5
+    let COUNTER=COUNTER+1
+done
 
 echo "=================================================="
-if [ "$ENV" == "prod" ]; then
-    if [ "$HTTP_CODE" == "200" ]; then
-        echo "✅ SUCCESS: Service is PUBLIC (200 OK)"
-    else
-        echo "❌ FAILURE: Expected 200, got $HTTP_CODE"
-        # Don't exit 1 here to avoid breaking pipelines if it's just a propagation delay, 
-        # but warn significantly.
-    fi
-else
-    if [ "$HTTP_CODE" == "403" ]; then
-        echo "✅ SUCCESS: Service is PRIVATE (403 Forbidden)"
-    else
-        echo "❌ FAILURE: Expected 403, got $HTTP_CODE"
-    fi
-fi
+echo "❌ FAILURE: Timed out waiting for HTTP $EXPECTED_CODE."
+echo "Last Status: $HTTP_CODE"
+echo "=================================================="
+exit 1
 echo "=================================================="
