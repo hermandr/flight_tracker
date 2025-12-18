@@ -27,10 +27,12 @@ resource "google_cloud_run_service" "default" {
 
 # Allow unauthenticated invocations (Public access)
 # Comment this out if you want to restrict access to authenticated users only
-resource "google_cloud_run_service_iam_member" "public_access" {
-  count    = var.environment == "prod" ? 1 : 0
-  service  = google_cloud_run_service.default.name
+# Authoritative binding for the invoker role
+# Ensures strict access control by overwriting any existing members with the list defined below.
+resource "google_cloud_run_service_iam_binding" "invoker" {
   location = google_cloud_run_service.default.location
+  service  = google_cloud_run_service.default.name
   role     = "roles/run.invoker"
-  member   = "allUsers"
+
+  members = var.environment == "prod" ? ["allUsers"] : []
 }
