@@ -5,7 +5,7 @@ output "service_url" {
 
 output "matomo_url" {
   description = "The URL of the Matomo service"
-  value       = google_cloud_run_service.matomo.status[0].url
+  value       = google_cloud_run_v2_service.matomo.uri
 }
 
 output "matomo_db_connection_name" {

@@ -65,7 +65,10 @@ jobs:
         id: build-image
         run: |
           IMAGE_URI="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-          docker build -t $IMAGE_URI .
+          docker build \
+            --build-arg NEXT_PUBLIC_MATOMO_URL="https://matomo-5ums4ujnoa-uc.a.run.app" \
+            --build-arg NEXT_PUBLIC_MATOMO_SITE_ID="1" \
+            -t $IMAGE_URI .
           docker push $IMAGE_URI
           echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
 
