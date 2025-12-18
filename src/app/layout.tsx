@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
+import MatomoTracker from "../components/MatomoTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +28,12 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
+        <Suspense fallback={null}>
+          <MatomoTracker
+            url={process.env.NEXT_PUBLIC_MATOMO_URL}
+            siteId={process.env.NEXT_PUBLIC_MATOMO_SITE_ID}
+          />
+        </Suspense>
       </body>
     </html>
   );
