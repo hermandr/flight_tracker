@@ -87,13 +87,12 @@ resource "google_cloud_run_v2_service" "matomo" {
       # Connect to Cloud SQL via Private IP
       env {
         name  = "MATOMO_DATABASE_HOST"
-        value = google_sql_database_instance.matomo_db_instance.private_ip_address
+        value = "${google_sql_database_instance.matomo_db_instance.private_ip_address}:3306"
       }
-      # Removing explicit adapter to allow auto-detection
-      # env {
-      #    name = "MATOMO_DATABASE_ADAPTER"
-      #    value = "mysql"
-      # }
+      env {
+          name = "MATOMO_DATABASE_ADAPTER"
+          value = "PDO\\MYSQL"
+      }
       env {
           name = "MATOMO_DATABASE_TABLES_PREFIX"
           value = "matomo_"
