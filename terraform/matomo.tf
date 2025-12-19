@@ -67,21 +67,34 @@ resource "google_cloud_run_v2_service" "matomo" {
   ingress = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
 
+  # Launch stage BETA required for some volume features
+  launch_stage = "BETA"
+
   template {
     service_account = google_service_account.matomo_sa.email
     
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 1
+    }
+
     containers {
       image = "matomo:latest"
       
       resources {
         limits = {
           cpu    = "1000m"
-          memory = "512Mi"
+          memory = "1024Mi"
         }
       }
       
       ports {
         container_port = 80
+      }
+
+      volume_mounts {
+        name       = "matomo-data"
+        mount_path = "/var/www/html/config"
       }
 
       # Connect to Cloud SQL via Private IP
@@ -110,6 +123,14 @@ resource "google_cloud_run_v2_service" "matomo" {
           value = google_sql_database.matomo_database.name
       }
     }
+
+    volumes {
+      name = "matomo-data"
+      gcs {
+        bucket = google_storage_bucket.matomo_data.name
+        read_only = false
+      }
+    }
     
     # Direct VPC Egress Configuration
     vpc_access {
@@ -125,6 +146,21 @@ resource "google_cloud_run_v2_service" "matomo" {
     type = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
     percent = 100
   }
+}
+
+# GCS Bucket for Matomo Persistence
+resource "google_storage_bucket" "matomo_data" {
+  name          = "matomo-data-${random_id.db_suffix.hex}"
+  location      = var.region
+  force_destroy = false
+  uniform_bucket_level_access = true
+}
+
+# Grant Matomo SA storage admin access to the bucket
+resource "google_storage_bucket_iam_member" "matomo_gcs_admin" {
+  bucket = google_storage_bucket.matomo_data.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.matomo_sa.email}"
 }
 
 # Allow public access to Matomo Interface
